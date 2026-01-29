@@ -1,51 +1,83 @@
-# Zadanie Rekrutacyjne: URL Shortener
+# URL Shortener
 
-## Opis zadania
+URL shortening service with click analytics.
 
-Stwórz system do skracania linków URL ze statystykami kliknięć.
+**Stack**: Symfony 8, PHP 8.4, API Platform 4, PostgreSQL, RabbitMQ, Next.js 16, React 19, TypeScript
 
-## Wymagania funkcjonalne
+## URLs
 
-- **Automatyczne generowanie sesji użytkownika bez podawania danych**
-- **Tworzenie skróconych linków**
-- **Widoczność linku: publiczny / prywatny**
-- **Opcjonalny czas wygaśnięcia (1h / 1d / 1t)**
-- **Opcjonalny własny alias** (jeśli wolny)
-- **Lista własnych linków**
-- **Lista wszystkich publicznych linków** (bez autoryzacji)
-- **Usuwanie linków** (soft delete)
-- **Statystyki kliknięć** (zliczane asynchronicznie przez RabbitMQ)
-- **Rate limit:** max 10 linków / minutę / sesja
+- **Frontend**: http://localhost:3000
+- **API**: http://localhost:8080/api
+- **API Docs**: http://localhost:8080/api/docs (login: `docs` / password: `docs`)
+- **RabbitMQ Management**: http://localhost:15672 (login: `shorturl` / password: `shorturl_secret`)
 
-## Endpointy API
+## Development Setup
 
-```
-POST   /api/session                            - utworzenie sesji
-GET    /api/session                            - pobranie sesji
-POST   /api/urls                               - tworzenie linku
-GET    /api/urls                               - lista własnych linków
-GET    /api/urls/{id}/stats                    - statystyki kliknięć
-DELETE /api/urls/{id}                          - usunięcie linku
-GET    /api/public                             - wszystkie publiczne linki
-GET    /{shortCode}                            - przekierowanie
+Start all services (PHP, PostgreSQL, RabbitMQ, frontend):
+
+```bash
+docker-compose up -d
 ```
 
-## Wymagania techniczne
+Initialize the backend (install dependencies, create database, run migrations, generate JWT keys):
 
-- **Backend:** Symfony 8 + PHP 8.4 ( opcjonalnie API Platform 4 )
-- **Frontend:** Next.js 16 / React 19
-- **Baza danych:** PostgreSQL / MariaDB / MongoDB - wybierz
-- **Message Broker:** RabbitMQ
-- **Autoryzacja:** JWT token
-- **Docker:** docker-compose (starter w repo)
-- **Testy:** minimum 2 testy jednostkowe
+```bash
+./init-dev.sh
+```
 
-LUB
+**Note**: `docker-compose up` automatically starts a Symfony Messenger worker container that processes the RabbitMQ queue for async URL click logging.
 
-- **Backend/Frontend/Mobile** Kotlin Multiplatform
+## API Testing with Bruno
 
-## Dostarcz
+<img src=".github/assets/bruno.png" alt="Bruno" width="120">
 
-- Fork repozytorium
-- Działający `docker-compose up`
-- README z instrukcją uruchomienia
+Bruno is a fast, open-source API client that stores collections as plain text files in your repository (unlike Postman's database approach), making it perfect for version control and team collaboration. Install from [usebruno.com](https://www.usebruno.com/) and open the `api-requests/shorturl-api` collection for ready-to-use API requests with automatic JWT management.
+
+<img src=".github/assets/bruno-dashboard.png" alt="Bruno dashboard">
+
+## API Documentation
+
+Interactive OpenAPI documentation available at http://localhost:8080/api/docs (login: `docs` / password: `docs`). Test endpoints directly from your browser.
+
+<img src=".github/assets/api_docs.png" alt="API Documentation">
+
+## Frontend
+
+Modern, minimalistic UI with dark theme, animated particle background, and real-time URL management.
+
+![Frontend](.github/assets/demo.gif)
+
+## API Endpoints
+
+### Session
+- `POST /api/session` - Create new session and get JWT token
+- `GET /api/session` - Get current session info (requires JWT)
+
+### URLs
+- `POST /api/urls` - Create short URL (requires JWT)
+- `GET /api/urls` - List my URLs with pagination (requires JWT)
+- `GET /api/urls/{id}/stats` - Get URL statistics (requires JWT)
+- `DELETE /api/urls/{id}` - Soft delete URL (requires JWT)
+
+### Public
+- `GET /api/public` - List all public URLs with pagination
+- `GET /{shortCode}` - Redirect to original URL
+
+## Features
+
+- Sessionless authentication (JWT)
+- Custom aliases or auto-generated short codes (6-8 chars)
+- Public/private visibility
+- Optional expiration (1h/1d/1w)
+- Click statistics (async via RabbitMQ)
+- Rate limiting (10 URLs per minute per session)
+- Soft delete
+
+## Tests
+
+Backend includes unit tests and API integration tests covering all endpoints.
+
+```bash
+cd backend
+composer tests
+```
